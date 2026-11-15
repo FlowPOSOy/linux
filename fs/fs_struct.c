@@ -192,6 +192,19 @@ static inline void validate_fs_switch(struct fs_struct *old_fs)
 	/* @old_fs may be dangling but for comparison it's fine */
 	if (old_fs != userspace_init_fs)
 		return;
+	/*
+	 * Other threads of PID 1 may still use @old_fs: Android's init starts
+	 * its property service thread and then unshares the mount namespace
+	 * from the main thread. Pointing the shared root at nullfs would pull
+	 * it out from under that thread (every SELinux access check against
+	 * /sys/fs/selinux fails and boot stalls), so keep the old behaviour
+	 * while anyone but the kernel's own reference (taken when
+	 * userspace_init_fs was recorded) still holds it.
+	 */
+	if (READ_ONCE(old_fs->users) > 1) {
+		pr_warn("VFS: Pid 1 stopped sharing filesystem state, still used by its other threads\n");
+		return;
+	}
 	pr_warn("VFS: Pid 1 stopped sharing filesystem state\n");
 	set_fs_root(userspace_init_fs, &init_fs.root);
 	set_fs_pwd(userspace_init_fs, &init_fs.root);
