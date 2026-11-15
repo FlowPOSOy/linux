@@ -18,6 +18,8 @@
 	compatible = "posbank,act1560", "rockchip,rk3399";
 
 	aliases {
+		/* the stock U-Boot writes the vendor-storage LAN MAC to ethernet0 */
+		ethernet0 = &lan;
 		mmc0 = &sdhci;
 		mmc1 = &sdmmc;
 		mmc2 = &sdio0;
@@ -551,6 +553,20 @@
 	pinctrl-names = "default";
 	pinctrl-0 = <&pcie_clkreqn_cpm>;
 	status = "okay";
+
+	pcie@0,0 {
+		reg = <0x000000 0 0 0 0>;
+		#address-cells = <3>;
+		#size-cells = <2>;
+		ranges;
+		device_type = "pci";
+		bus-range = <0x1 0x1>;
+
+		lan: ethernet@0,0 {
+			compatible = "pci10ec,8168";
+			reg = <0x010000 0 0 0 0>;
+		};
+	};
 };
 
 &pinctrl {
