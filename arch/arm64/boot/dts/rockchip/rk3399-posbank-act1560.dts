@@ -815,9 +815,12 @@
 	status = "okay";
 };
 
-/* USB-C (FUSB302). Host for bring-up; peripheral/role switch needs the TCPM connector node. */
+/*
+ * USB-C (FUSB302). Stock runs it as OTG switched by the FUSB302 (fastboot/adb to a host). Until
+ * the TCPM connector node and role switch are in, fix it as peripheral so adb works.
+ */
 &usbdrd_dwc3_0 {
-	dr_mode = "host";
+	dr_mode = "peripheral";
 	status = "okay";
 };
 
