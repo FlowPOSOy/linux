@@ -10,6 +10,7 @@
 /dts-v1/;
 #include <dt-bindings/input/linux-event-codes.h>
 #include <dt-bindings/pwm/pwm.h>
+#include <dt-bindings/soc/rockchip,boot-mode.h>
 #include "rk3399.dtsi"
 
 / {
@@ -22,8 +23,9 @@
 		mmc2 = &sdio0;
 	};
 
-	chosen {
-		stdout-path = "serial2:115200n8";
+	/* the stock U-Boot's dtbo overlay targets &chosen and &reboot_mode */
+	chosen: chosen {
+		stdout-path = "serial2:1500000n8";
 	};
 
 	backlight: backlight {
@@ -518,6 +520,21 @@
 &pmu_io_domains {
 	pmu1830-supply = <&vcc_1v8>;
 	status = "okay";
+};
+
+/*
+ * PMUGRF_OS_REG0 boot mode, read by the stock U-Boot: "reboot bootloader" enters its
+ * fastboot, "reboot loader" the Rockchip loader (USB download) mode.
+ */
+&pmugrf {
+	reboot_mode: reboot-mode {
+		compatible = "syscon-reboot-mode";
+		offset = <0x300>;
+		mode-bootloader = <BOOT_FASTBOOT>;
+		mode-loader = <BOOT_BL_DOWNLOAD>;
+		mode-normal = <BOOT_NORMAL>;
+		mode-recovery = <BOOT_RECOVERY>;
+	};
 };
 
 /* Realtek PCIe NIC (r8169) */
