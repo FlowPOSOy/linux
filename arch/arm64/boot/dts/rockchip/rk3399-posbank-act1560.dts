@@ -214,6 +214,8 @@
 			compatible = "edp-panel";
 			backlight = <&backlight>;
 			enable-gpios = <&gpio1 RK_PB5 GPIO_ACTIVE_HIGH>;
+			/* stock prepare-delay-ms; without it the EDID read at probe fails */
+			hpd-absent-delay-ms = <200>;
 			no-hpd;
 			pinctrl-names = "default";
 			pinctrl-0 = <&lcd_panel_en>;
