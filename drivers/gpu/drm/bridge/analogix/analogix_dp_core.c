@@ -55,6 +55,17 @@ static void analogix_dp_init_dp(struct analogix_dp_device *dp)
 	analogix_dp_config_interrupt(dp);
 
 	analogix_dp_init_hpd(dp);
+
+	/*
+	 * Without an external PHY (RK3288/RK3399 eDP) the AUX channel runs off the
+	 * controller's own analog block and PLL, which are otherwise only powered
+	 * up when the bridge is enabled. Power them up here so that AUX transfers
+	 * before the first modeset (EDID read by a panel on the DP AUX bus) don't
+	 * time out.
+	 */
+	if (!dp->phy)
+		analogix_dp_init_analog_func(dp);
+
 	analogix_dp_init_aux(dp);
 }
 
