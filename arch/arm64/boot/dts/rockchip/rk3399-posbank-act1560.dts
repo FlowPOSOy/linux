@@ -156,6 +156,26 @@
 	 * stock driver (high = plugged) although the stock DT flags it active-low.
 	 * Needs drivers/extcon/extcon-dp-gpio.c.
 	 */
+	/*
+	 * pstore, as in the stock DT: the previous boot's console and the panic record survive a
+	 * warm reset there (Android files them as last_kmsg). Below the RAM the stock U-Boot hands
+	 * the kernel (0x200000 up), next to the TF-A, which leaves it alone.
+	 */
+	reserved-memory {
+		#address-cells = <2>;
+		#size-cells = <2>;
+		ranges;
+
+		ramoops@110000 {
+			compatible = "ramoops";
+			reg = <0x0 0x110000 0x0 0xf0000>;
+			record-size = <0x20000>;
+			console-size = <0x80000>;
+			ftrace-size = <0x0>;
+			pmsg-size = <0x50000>;
+		};
+	};
+
 	dp_extcon: dp-extcon {
 		compatible = "linux,extcon-dp-gpio";
 		hpd-gpios = <&gpio4 RK_PD1 GPIO_ACTIVE_HIGH>;
