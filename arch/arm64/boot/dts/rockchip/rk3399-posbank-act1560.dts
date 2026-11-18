@@ -164,6 +164,64 @@
 		pinctrl-0 = <&dp_hpd>;
 	};
 
+	/*
+	 * ES8316 on i2s0. The codec has only headphone outputs; the speaker amplifier
+	 * hangs off them like on rk3399-pinebook-pro. The stock (Posbank) es8316 driver
+	 * drives spk-con-gpio (GPIO4_D0) and headset-con-gpio (GPIO4_D2) raw high at
+	 * probe and both low while headphones are plugged in (es8316_headset_detect),
+	 * so they are modelled as the amplifier's enable and its supply's enable.
+	 * Headphone detect is the stock rk-headset's GPIO4_D4, low when plugged in.
+	 */
+	es8316-sound {
+		compatible = "simple-audio-card";
+		pinctrl-names = "default";
+		pinctrl-0 = <&hp_det>;
+		simple-audio-card,name = "es8316";
+		simple-audio-card,format = "i2s";
+		simple-audio-card,mclk-fs = <256>;
+
+		simple-audio-card,widgets =
+			"Microphone", "Mic Jack",
+			"Headphone", "Headphones",
+			"Speaker", "Speaker";
+		simple-audio-card,routing =
+			"MIC1", "Mic Jack",
+			"Headphones", "HPOL",
+			"Headphones", "HPOR",
+			"Speaker Amplifier INL", "HPOL",
+			"Speaker Amplifier INR", "HPOR",
+			"Speaker", "Speaker Amplifier OUTL",
+			"Speaker", "Speaker Amplifier OUTR";
+
+		simple-audio-card,hp-det-gpios = <&gpio4 RK_PD4 GPIO_ACTIVE_LOW>;
+		simple-audio-card,aux-devs = <&speaker_amp>;
+		simple-audio-card,pin-switches = "Speaker";
+
+		simple-audio-card,cpu {
+			sound-dai = <&i2s0>;
+		};
+
+		simple-audio-card,codec {
+			sound-dai = <&es8316>;
+		};
+	};
+
+	speaker_amp: speaker-amplifier {
+		compatible = "simple-audio-amplifier";
+		enable-gpios = <&gpio4 RK_PD0 GPIO_ACTIVE_HIGH>;
+		sound-name-prefix = "Speaker Amplifier";
+		VCC-supply = <&spk_con>;
+	};
+
+	/* Stock headset-con-gpio, switched together with the amplifier. */
+	spk_con: regulator-spk-con {
+		compatible = "regulator-fixed";
+		regulator-name = "spk_con";
+		gpio = <&gpio4 RK_PD2 GPIO_ACTIVE_HIGH>;
+		enable-active-high;
+		vin-supply = <&vcc5v0_sys>;
+	};
+
 	vdd_log: regulator-vdd-log {
 		compatible = "pwm-regulator";
 		pwms = <&pwm2 0 25000 1>;
@@ -510,7 +568,33 @@
 	};
 };
 
-/* TODO: ES8316 codec on i2c1 (i2s0), PN54x NFC on i2c5, FUSB302 on i2c4 */
+/* Stock bus timing. */
+&i2c1 {
+	i2c-scl-rising-time-ns = <300>;
+	i2c-scl-falling-time-ns = <15>;
+	status = "okay";
+
+	es8316: audio-codec@10 {
+		compatible = "everest,es8316";
+		reg = <0x10>;
+		clocks = <&cru SCLK_I2S_8CH_OUT>;
+		clock-names = "mclk";
+		pinctrl-names = "default";
+		pinctrl-0 = <&i2s_8ch_mclk_pin>;
+		#sound-dai-cells = <0>;
+	};
+};
+
+/* Stock: two-channel bus (no SDO1-3/SDI1-3). */
+&i2s0 {
+	pinctrl-0 = <&i2s0_2ch_bus>;
+	pinctrl-1 = <&i2s0_2ch_bus_bclk_off>;
+	rockchip,playback-channels = <2>;
+	rockchip,capture-channels = <2>;
+	status = "okay";
+};
+
+/* TODO: PN54x NFC on i2c5, FUSB302 on i2c4 */
 
 &io_domains {
 	bt656-supply = <&vcc_3v0>;
@@ -593,6 +677,18 @@
 	buttons {
 		pwr_btn: pwr-btn {
 			rockchip,pins = <0 RK_PA5 RK_FUNC_GPIO &pcfg_pull_up>;
+		};
+	};
+
+	headphone {
+		hp_det: hp-det {
+			rockchip,pins = <4 RK_PD4 RK_FUNC_GPIO &pcfg_pull_up>;
+		};
+	};
+
+	i2s0 {
+		i2s_8ch_mclk_pin: i2s-8ch-mclk-pin {
+			rockchip,pins = <4 RK_PA0 1 &pcfg_pull_none>;
 		};
 	};
 
